@@ -1,0 +1,243 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}
+Admin Dashboard
+{% endblock title %}
+{% block content %}
+
+   <!-- Sale & Revenue Start -->
+    <!-- Filter Options -->
+    <div class="mb-4">
+        <form method="GET">
+            <label for="filter">Filter By:</label>
+            <select name="filter" id="filter" class="form-control w-25 d-inline">
+                <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
+                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="row g-4 mb-4">
+        <!-- New Seats -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'new_seats' %}?filter={{ filter_type }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-graduation-cap fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">New Seats</p>
+                        <h6 class="mb-0">{{ new_seats }}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+    
+        <!-- New Joinings -->
+        <div class="col-sm-6 col-xl-3">
+            <a class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-user-check fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">New Joinings</p>
+                        <h6 class="mb-0">0</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+    
+        <!-- Installments Due -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'installments_due' %}?filter={{ filter_type }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-credit-card fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">Installments Due</p>
+                        <h6 class="mb-0">{{ installments_due }}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+    
+        <!-- Default Students -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'default_students' %}?filter={{ filter_type }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-user-alt-slash fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">Default Students</p>
+                        <h6 class="mb-0">{{ default_students }}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-angle-double-down fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Deposit</p>
+                    <h6 class="mb-0">Rs {{ total_deposit }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-angle-double-up fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Withdraw</p>
+                    <h6 class="mb-0">Rs {{ total_withdraw }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-hourglass-start fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Pending Pays</p>
+                    <h6 class="mb-0">Rs {{ pending_pays }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-chart-pie fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Approved Pays</p>
+                    <h6 class="mb-0">Rs {{ total_balance }}</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-university fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Bank</p>
+                    <h6 class="mb-0">Rs {{ bank_amount }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-money-bill-wave fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Cash</p>
+                    <h6 class="mb-0">Rs {{ cash_amount }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-12 col-xl-6">
+
+            <a href="{% url 'all_transactions' %}?filter={{ filter_type }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-wallet fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">Total</p>
+                        <h6 class="mb-0">Rs {{ tt_balance }}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+<!-- Staff  -->
+
+   
+
+<!--  Staff End -->
+
+
+
+
+            {% comment %} <!-- Sales Chart Start -->
+
+                <div class="row g-4 mb-4">
+                    <div class="col-sm-12 col-xl-6">
+                        <div class="bg-light text-center rounded p-4">
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <h6 class="mb-0">Worldwide Sales</h6>
+                                <a href="">Show All</a>
+                            </div>
+                            <canvas id="worldwide-sales"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-xl-6">
+                        <div class="bg-light text-center rounded p-4">
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <h6 class="mb-0">Salse & Revenue</h6>
+                                <a href="">Show All</a>
+                            </div>
+                            <canvas id="salse-revenue"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Sales Chart End -->
+
+
+             {% endcomment %}
+
+
+
+
+<!-- Widgets Start -->
+<div class="bg-light rounded p-4 mb-4">
+
+<div class="container mt-4">
+    <h6>Pending Transactions</h6>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Received By</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in pending_payments %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ record.type }}</td>
+                        <td>{{ record.description }}</td>
+                        <td class="{% if transaction.transaction_type == "outgoing" %}text-danger{% else %}text-success{% endif %}">Rs {{ record.amount }}
+                            {% if record.type == "Expense" %}-{% else %}+{% endif %}</td>
+                        <td>{{ record.received_by }}</td>
+                        <td>{{ record.payment_method }}</td>
+                        <td>
+                            <input 
+                                class="form-check-input" 
+                                type="checkbox" 
+                                name="approve_record_{{ record.id }}" 
+                                {% if record.status == 'approved' %}checked{% endif %}
+                            >
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No pending payments found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Update Status</button>
+    </form>
+</div>
+</div>
+
+<!-- Widgets End -->
+{% endblock content %}
+
+

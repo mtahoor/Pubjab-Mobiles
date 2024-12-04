@@ -1,0 +1,39 @@
+{% extends base %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>New Seats {{request.user.role}}</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Roll Number</th>
+                    <th>Name</th>
+                    <th>Phone Number</th>
+                    <th>Refrence</th>
+                    <th>Enrollment Via</th>
+                    <th>Enrolled By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ student.roll_number }}</td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.phone_number }}</td>
+                    <td>{{ student.reference }}</td>
+                    <td>{{ student.enrollment_method }}</td>
+                    <td>{{ student.who_enrolled.username }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No new seats today.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

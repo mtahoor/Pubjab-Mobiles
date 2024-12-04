@@ -1,0 +1,55 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}
+Manage References
+{% endblock title %}
+{% block content %}
+
+<div class="bg-light rounded p-4">
+    <form method="POST" class="mb-4">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Add Reference</button>
+    </form>
+</div>
+<div class="bg-light text-center rounded p-4 mt-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h6 class="mb-0">Available References</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table text-start align-middle table-bordered table-hover mb-0">
+            <thead>
+                <tr class="text-dark">
+                    <th>#</th>
+                    <th>Reference Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reference in references %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ reference.name }}</td>
+                    <td>
+                        {% if reference.is_deleted %}
+                        <a class="btn btn-sm btn-success" href="{% url 'soft_delete_reference' reference.id %}">
+                            Activate
+                        </a>
+                        {% else %}
+                        <a class="btn btn-sm btn-danger" href="{% url 'soft_delete_reference' reference.id %}">
+                            Deactivate
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No references available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock content %}

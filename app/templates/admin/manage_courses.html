@@ -1,0 +1,50 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}
+Courses
+{% endblock title %}
+{% block content %}
+
+<div class="bg-light rounded p-4">
+    <form method="POST" class="mb-4">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Add Course</button>
+    </form>
+</div>
+<div class="bg-light text-center rounded p-4 mt-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h6 class="mb-0">Available Courses</h6>
+    </div>
+<div class="table-responsive">
+    <table class="table text-start align-middle table-bordered table-hover mb-0">
+        <thead>
+            <tr class="text-dark">
+                <th>#</th>
+                <th>Course Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ course.name }}</td>
+                            <td>
+                                {% if course.is_deleted %}
+                                    <a class="btn btn-sm btn-success" href="{% url 'soft_delete_course' course.id %}">Activate</a>
+                                {% else %}
+                                    <a class="btn btn-sm btn-danger" href="{% url 'soft_delete_course' course.id %}">Deactivate</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No courses available.</td>
+                    </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+{% endblock content %}

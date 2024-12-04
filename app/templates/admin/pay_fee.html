@@ -1,0 +1,36 @@
+{% extends base %}
+{% block content %}
+
+<div class="bg-light rounded p-4">
+    <script>
+        function toggleInstallmentFields() {
+            const paymentMode = document.querySelector('[name="payment_mode"]').value;
+            const amountPaidField = document.querySelector('[name="amount_paid"]').parentNode;
+            const nextDueDateField = document.querySelector('[name="next_due_date"]').parentNode;
+    
+            if (paymentMode === 'pay_in_full') {
+                amountPaidField.style.display = 'none';
+                nextDueDateField.style.display = 'none';
+                document.querySelector('[name="amount_paid"]').removeAttribute('required');
+                document.querySelector('[name="next_due_date"]').removeAttribute('required');
+            } else {
+                amountPaidField.style.display = 'block';
+                nextDueDateField.style.display = 'block';
+                document.querySelector('[name="amount_paid"]').setAttribute('required', true);
+                document.querySelector('[name="next_due_date"]').setAttribute('required', true);
+            }
+        }
+    
+        document.addEventListener('DOMContentLoaded', toggleInstallmentFields);
+    </script>
+    <h3>Pay Fee for {{ enrollment.student.name }}</h3>
+    <p><strong>Course:</strong> {{ enrollment.course.name }}</p>
+    <p><strong>Remaining Fee:</strong> {{ remaining_fee }}</p>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Submit Payment</button>
+    </form>
+</div>
+{% endblock %}

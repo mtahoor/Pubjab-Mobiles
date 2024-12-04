@@ -1,0 +1,83 @@
+{% extends base %}
+{% block content %}
+<div class="container mt-4">
+    <h2>All Transactions and Installments</h2>
+
+   
+
+    <div class="bg-light rounded p-4 mb-4">
+
+        <h6>Student Payments</h6>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student</th>
+                        <th>Course</th>
+                        <th>Amount Paid</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for installment in installments %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ installment.enrollment.student.name }}</td>
+                        <td>{{ installment.enrollment.course.name }}</td>
+                        <td class="text-success">Rs {{ installment.amount_paid }} +</td>
+                        <td>{{ installment.transaction_method }}</td>
+                        <td>{{ installment.status }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No installments found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-light rounded p-4 mb-4">
+
+        <h6>Transactions</h6>
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ transaction.transaction_type }}</td>
+                        <td>{{ transaction.description }}</td>
+                        <td class="{% if transaction.transaction_type == "outgoing" %}text-danger{% else %}text-success{% endif %}">Rs {{ transaction.amount }}
+                            {% if transaction.transaction_type == "outgoing" %}-{% else %}+{% endif %}
+                        </td>
+                        <td>{{ transaction.status }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No transactions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-light rounded p-4 mb-4">
+        <h4>Total Balance: Rs {{ total_balance }}</h4>
+    </div>
+    
+</div>
+{% endblock %}

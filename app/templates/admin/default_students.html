@@ -1,0 +1,36 @@
+{% extends base %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Default Students</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Course</th>
+                    <th>Amount Due</th>
+                    <th>Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for installment in installments %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ installment.enrollment.student.name }}</td>
+                    <td>{{ installment.enrollment.student.roll_number }}</td>
+                    <td>{{ installment.enrollment.course.name }}</td>
+                    <td>${{ installment.remaining_fee }}</td>
+                    <td>{{ installment.next_due_date }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No default students found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
