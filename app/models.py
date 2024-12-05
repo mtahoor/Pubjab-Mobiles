@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.timezone import now
 from .managers import CustomUserManager,SoftDeleteManager
+from django.db.models import Max
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -54,12 +55,16 @@ class Student(models.Model):
     objects = SoftDeleteManager()
 
     def save(self, *args, **kwargs):
-        if not self.roll_number:  
-            current_month_year = now().strftime('%y%m')  
-            student_count = Student.objects.all_with_deleted().filter(
+        if not self.roll_number:
+            current_month_year = now().strftime('%y%m')
+            highest_roll_number = Student.objects.all_with_deleted().filter(
                 roll_number__startswith=current_month_year
-            ).count() + 1
-            self.roll_number = f"{current_month_year}{student_count}"
+            ).aggregate(highest=Max('roll_number'))['highest']
+            if highest_roll_number:
+                next_roll_number = int(highest_roll_number) + 1
+            else:
+                next_roll_number = int(f"{current_month_year}1")
+            self.roll_number = next_roll_number
         super().save(*args, **kwargs)
 
     def __str__(self):

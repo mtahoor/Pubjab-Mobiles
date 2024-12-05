@@ -26,5 +26,7 @@ urlpatterns = [
     path('new-seats/', views.new_seats, name='new_seats'),
     path('installments-due/', views.installments_due, name='installments_due'),
     path('default-students/', views.default_students, name='default_students'),
-    path('all-transactions/', views.all_transactions, name='all_transactions'),
+    path('all-transactions/', views.all_transactions, name='all_transactions'), 
+    path('change-staff-password/<int:user_id>/', views.change_staff_password, name='change_staff_password'),
+   
 ]

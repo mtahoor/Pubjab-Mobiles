@@ -6,7 +6,7 @@ from .models import *
 from django.db.models import Q,Sum
 from django.utils.timezone import now, timedelta
 from django.shortcuts import redirect, get_object_or_404
-
+from django.contrib.auth.hashers import make_password
 
 
 @login_required
@@ -737,3 +737,26 @@ def all_transactions(request):
         'base':base_template
     }
     return render(request, 'admin/all_transactions.html', context)
+
+
+@login_required
+def change_staff_password(request, user_id):
+    if request.user.role != 'superuser': 
+        return redirect('custom_login')
+    staff_user = get_object_or_404(CustomUser, id=user_id)
+    
+    if request.method == 'POST':
+        form = ChangePasswordForm(request.POST)
+        if form.is_valid():
+            new_password = form.cleaned_data['new_password']
+            staff_user.password = make_password(new_password)  # Hash the new password
+            staff_user.save()
+            return redirect('add_staff_member')  # Redirect to the staff management page
+    else:
+        form = ChangePasswordForm()
+
+    context = {
+        'staff_user': staff_user,
+        'form': form
+    }
+    return render(request, 'admin/change_staff_password.html', context)

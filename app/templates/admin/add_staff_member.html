@@ -43,8 +43,8 @@ Staff Members
                                 {% else %}
                                     <a class="btn btn-sm btn-success" href="{% url 'change_user_status' user.id %}">Activate</a>
                                 {% endif %}
+                                <a class="btn btn-sm btn-warning" href="{% url 'change_staff_password' user.id %}">Change Password</a>
                             </td>
-                            
                         </tr>
                     {% endfor %}
                 </tbody>

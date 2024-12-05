@@ -176,3 +176,10 @@ class TransactionForm(forms.ModelForm):
             'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Description'}),
             'transaction_method': forms.Select(attrs={'class': 'form-control'}),
         }
+
+
+class ChangePasswordForm(forms.Form):
+    new_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter new password'}),
+        label='New Password'
+    )
