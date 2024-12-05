@@ -7,7 +7,7 @@ from django.db.models import Q,Sum
 from django.utils.timezone import now, timedelta
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password
-
+from django.db.models import Min
 
 @login_required
 def add_staff_member(request):
@@ -468,19 +468,22 @@ def soft_delete_student(request, student_id):
 
 @login_required
 def list_students_for_fee_payment(request):
+    # Set base template
     if request.user.role == 'staff':
         base_template = 'base/staff_base.html'
     else:
         base_template = 'base/base.html'
-    query = request.GET.get('q', '')  # Get the search query from the request
+
+    # Handle search query
+    query = request.GET.get('q', '')
     if query:
         students = Student.objects.filter(
-            Q(name__icontains=query) |  # Search by name
-            Q(cnic__icontains=query) |  # Search by CNIC
-            Q(phone_number__icontains=query) |  # Search by phone number
-            Q(roll_number__icontains=query),  # Search by roll number
+            Q(name__icontains=query) |
+            Q(cnic__icontains=query) |
+            Q(phone_number__icontains=query) |
+            Q(roll_number__icontains=query),
             is_deleted=False,
-            enrollment__enrollment_status='payment_pending'  # Retain original filtering criteria
+            enrollment__enrollment_status='payment_pending'
         ).distinct()
     else:
         students = Student.objects.filter(
@@ -488,12 +491,30 @@ def list_students_for_fee_payment(request):
             enrollment__enrollment_status='payment_pending'
         ).distinct()
 
+    # Annotate total_paid and remaining_fee for each student
+    students_with_fees = []
+    for student in students:
+        student_enrollments = student.enrollment_set.all()
+        for enrollment in student_enrollments:
+            total_paid = enrollment.installment_set.filter().aggregate(
+                total=Sum('amount_paid')
+            )['total'] or 0
+            remaining_fee = enrollment.course_fee - total_paid
+
+            students_with_fees.append({
+                'student': student,
+                'enrollment': enrollment,
+                'total_paid': total_paid,
+                'remaining_fee': remaining_fee,
+            })
+
     context = {
-        'students': students,
-        'query': query,  # Pass the query back to the template to retain it in the search bar
-        'base':base_template
+        'students_with_fees': students_with_fees,
+        'query': query,
+        'base': base_template
     }
     return render(request, 'admin/list_students_fee.html', context)
+
 
 
 @login_required

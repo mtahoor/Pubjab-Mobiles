@@ -2,7 +2,7 @@
 {% block content %}
 <div class="bg-light rounded p-4">
     <div class="d-flex justify-content-between align-items-center mb-2">
-    <h4>Students Fee Management</h4>
+        <h4>Students Fee Management</h4>
         <form method="GET" class="d-flex justify-content-end">
             <input type="text" name="q" class="form-control w-50" placeholder="Search" value="{{ query|default:'' }}">
             <button type="submit" class="btn btn-primary ms-2"><i class="bi bi-search"></i></button>
@@ -17,23 +17,29 @@
                     <th>Name</th>
                     <th>Course</th>
                     <th>Total Fee</th>
+                    <th>Total Paid</th>
+                    <th>Remaining Fee</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for student in students %}
-                {% for enrollment in student.enrollment_set.all %}
+                {% for record in students_with_fees %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ student.roll_number }}</td>
-                    <td>{{ student.name }}</td>
-                    <td>{{ enrollment.course.name }}</td>
-                    <td>{{ enrollment.course_fee }}</td>
+                    <td>{{ record.student.roll_number }}</td>
+                    <td>{{ record.student.name }}</td>
+                    <td>{{ record.enrollment.course.name }}</td>
+                    <td>{{ record.enrollment.course_fee }}</td>
+                    <td>{{ record.total_paid }}</td>
+                    <td>{{ record.remaining_fee }}</td>
                     <td>
-                        <a href="{% url 'pay_fee' enrollment.id %}" class="btn btn-sm btn-primary">Pay Fee</a>
+                        <a href="{% url 'pay_fee' record.enrollment.id %}" class="btn btn-sm btn-primary">Pay Fee</a>
                     </td>
                 </tr>
-                {% endfor %}
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No students found.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
