@@ -1,5 +1,22 @@
 {% extends base %}
 {% block content %}
+
+<div class="bg-light rounded p-4 mb-4">
+
+    <div class="mb-4">
+        <form method="GET">
+            <label for="filter">Filter By:</label>
+            <select name="filter" id="filter" class="form-control w-25 d-inline">
+                <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
+                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>Monthly</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+    </div>
+</div>
+
+
 <div class="container mt-4">
     <h2>All Transactions and Installments</h2>
 
@@ -80,4 +97,5 @@
     </div>
     
 </div>
+
 {% endblock %}

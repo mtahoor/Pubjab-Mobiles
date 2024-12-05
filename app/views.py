@@ -61,6 +61,8 @@ def admin_dashboard(request):
         date_from = now().date()
     elif filter_type == 'weekly':
         date_from = now().date() - timedelta(days=7)
+    elif filter_type == 'monthly':
+        date_from = now().replace(day=1) 
     else:
         date_from = now().date()
 
@@ -218,6 +220,8 @@ def staff_dashboard(request):
         date_from = now().date()
     elif filter_type == 'weekly':
         date_from = now().date() - timedelta(days=7)
+    elif filter_type == 'monthly':
+        date_from = now().replace(day=1)
     else:
         date_from = now().date()
 
@@ -633,10 +637,12 @@ def new_seats(request):
         date_from = now().date()
     elif filter_type == 'weekly':
         date_from = now().date() - timedelta(days=7)
+    elif filter_type == 'monthly':
+        date_from = now().replace(day=1)
     else:
         date_from = now().date()
     students =  Student.objects.filter(created_at__date__gte=date_from).order_by('-id')
-    context = {'students': students,'base':base_template}
+    context = {'students': students,'base':base_template,'filter_type':filter_type}
     return render(request, 'admin/new_seats.html', context)
 
 @login_required
@@ -650,6 +656,8 @@ def installments_due(request):
         date_from = now().date()
     elif filter_type == 'weekly':
         date_from = now().date() - timedelta(days=7)
+    elif filter_type == 'monthly':
+        date_from = now().replace(day=1)
     else:
         date_from = now().date()
     installments = Installment.objects.filter(
@@ -657,7 +665,7 @@ def installments_due(request):
         next_due_date__lte=now().date(),
         payment_mode='installments'
     )
-    context = {'installments': installments,'base':base_template}
+    context = {'installments': installments,'base':base_template,'filter_type':filter_type}
     return render(request, 'admin/installments_due.html', context)
 
 @login_required
@@ -671,6 +679,8 @@ def default_students(request):
         date_from = now().date()
     elif filter_type == 'weekly':
         date_from = now().date() - timedelta(days=7)
+    elif filter_type == 'monthly':
+        date_from = now().replace(day=1)
     else:
         date_from = now().date()
     installments = Installment.objects.filter(
@@ -688,7 +698,7 @@ def default_students(request):
         installment.remaining_fee = installment.enrollment.course_fee - total_paid
 
 
-    context = {'installments': installments,'base':base_template}
+    context = {'installments': installments,'base':base_template,'filter_type':filter_type}
     return render(request, 'admin/default_students.html', context)
 
 
@@ -704,6 +714,8 @@ def all_transactions(request):
         date_from = now().date()
     elif filter_type == 'weekly':
         date_from = now().date() - timedelta(days=7)
+    elif filter_type == 'monthly':
+        date_from = now().replace(day=1)
     else:
         date_from = now().date()
 
@@ -733,7 +745,7 @@ def all_transactions(request):
         'transactions': transactions,
         'installments': installments,
         'total_balance': total_balance,
-        'filter_type': filter_type,  # Pass the filter type for the template
+        'filter_type': filter_type,
         'base':base_template
     }
     return render(request, 'admin/all_transactions.html', context)
