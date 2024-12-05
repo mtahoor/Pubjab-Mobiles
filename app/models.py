@@ -99,6 +99,7 @@ class Installment(models.Model):
     METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('bank', 'Bank'),
+        ('jazz cash','Jazz Cash'),
     ]
 
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
@@ -143,6 +144,7 @@ class Transaction(models.Model):
     METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('bank', 'Bank'),
+        ('jazz cash','Jazz Cash'),
     ]
 
     transaction_type = models.CharField(

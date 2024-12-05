@@ -138,7 +138,11 @@ class StudentForm(forms.ModelForm):
             'father_phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Father Phone Number'}),
             'enrollment_method': forms.Select(attrs={'class': 'form-control'}),
             'reference': forms.Select(attrs={'class': 'form-control'}),
-            'picture': forms.FileInput(attrs={'class': 'form-control'}),
+            'picture': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*',
+                'capture': 'environment'    # Use 'user' for front camera or 'environment' for back camera
+            }),
         }
 
 class EnrollmentForm(forms.ModelForm):
