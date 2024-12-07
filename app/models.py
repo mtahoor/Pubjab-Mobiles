@@ -56,17 +56,20 @@ class Student(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.roll_number:
-            current_month_year = now().strftime('%y%m')
+            current_month_year = now().strftime('%y%m') 
             highest_roll_number = Student.objects.all_with_deleted().filter(
-                roll_number__startswith=current_month_year
-            ).aggregate(highest=Max('roll_number'))['highest']
+                roll_number__startswith=f"{current_month_year}-"  
+            ).aggregate(
+                highest=Max('roll_number')
+            )['highest']
             if highest_roll_number:
-                next_roll_number = int(highest_roll_number) + 1
+                current_sequence = int(highest_roll_number.split('-')[-1])
+                next_sequence = current_sequence + 1
             else:
-                next_roll_number = int(f"{current_month_year}1")
-            self.roll_number = next_roll_number
+                next_sequence = 1
+            self.roll_number = f"{current_month_year}-{next_sequence}"
+            print("Generated Roll Number:", self.roll_number)
         super().save(*args, **kwargs)
-
     def __str__(self):
         return self.name
 
