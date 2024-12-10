@@ -2,7 +2,10 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.timezone import now
 from .managers import CustomUserManager,SoftDeleteManager
-from django.db.models import Max
+from django.db.models import Max,IntegerField
+from django.db.models.functions import Substr, Cast
+
+
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -58,12 +61,14 @@ class Student(models.Model):
         if not self.roll_number:
             current_month_year = now().strftime('%y%m') 
             highest_roll_number = Student.objects.all_with_deleted().filter(
-                roll_number__startswith=f"{current_month_year}-"  
+                roll_number__startswith=f"{current_month_year}-"
+            ).annotate(
+                roll_number_sequence=Cast(Substr('roll_number', len(f"{current_month_year}-") + 1), IntegerField())
             ).aggregate(
-                highest=Max('roll_number')
+                highest=Max('roll_number_sequence')
             )['highest']
             if highest_roll_number:
-                current_sequence = int(highest_roll_number.split('-')[-1])
+                current_sequence = highest_roll_number
                 next_sequence = current_sequence + 1
             else:
                 next_sequence = 1
