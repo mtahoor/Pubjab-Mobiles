@@ -28,5 +28,6 @@ urlpatterns = [
     path('default-students/', views.default_students, name='default_students'),
     path('all-transactions/', views.all_transactions, name='all_transactions'), 
     path('change-staff-password/<int:user_id>/', views.change_staff_password, name='change_staff_password'),
+    path('commision/', views.filter_students_data, name='filter_students_data'),
    
 ]

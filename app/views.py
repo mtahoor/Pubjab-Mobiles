@@ -8,6 +8,10 @@ from django.utils.timezone import now, timedelta
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password
 from django.db.models import Min
+from django.db.models import Count
+import json
+from django.db.models.functions import TruncDate
+
 
 @login_required
 def add_staff_member(request):
@@ -793,3 +797,62 @@ def change_staff_password(request, user_id):
         'form': form
     }
     return render(request, 'admin/change_staff_password.html', context)
+
+
+def filter_students_data(request):
+    # Get current date
+    today = now().date()
+
+    # Define time filters for current and previous months
+    months = [
+        today.replace(day=1),  # Current month
+        (today.replace(day=1) - timedelta(days=1)).replace(day=1),  # Previous month
+        ((today.replace(day=1) - timedelta(days=1)).replace(day=1) - timedelta(days=1)).replace(day=1),
+        (((today.replace(day=1) - timedelta(days=1)).replace(day=1) - timedelta(days=1)).replace(day=1) - timedelta(days=1)),
+    ]
+
+    # Default selections
+    selected_month = request.GET.get('month', months[0].strftime('%Y-%m'))
+    filter_type = request.GET.get('filter_type', 'reference')  # 'reference' or 'registered_by'
+    filter_value = request.GET.get('filter_value', None)
+
+    # Filter by selected month
+    selected_month_start = now().replace(year=int(selected_month.split('-')[0]), month=int(selected_month.split('-')[1]), day=1)
+    next_month = (selected_month_start + timedelta(days=31)).replace(day=1)
+    
+    students = Student.objects.filter(
+        created_at__gte=selected_month_start,
+        created_at__lt=next_month,
+    )
+
+    # Apply additional filters
+    if filter_type == 'reference' and filter_value:
+        students = students.filter(reference_id=filter_value)
+    elif filter_type == 'registered_by' and filter_value:
+        students = students.filter(who_enrolled_id=filter_value)
+
+    # Group data by date
+    student_counts = students.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
+
+    # Convert student_counts to a JSON-serializable list
+    student_counts_list = [
+        {'date': entry['date'].strftime('%Y-%m-%d') if entry['date'] else None, 'count': entry['count']}
+        for entry in student_counts
+    ]
+    # Prepare dropdowns
+    references = Reference.objects.all()
+    users = CustomUser.objects.filter(role__in=['staff', 'admin'])
+
+    context = {
+        'months': [(month.strftime('%Y-%m'), month.strftime('%B')) for month in months],
+        'selected_month': selected_month,
+        'filter_type': filter_type,
+        'filter_value': filter_value,
+        'references': references,
+        'users': users,
+        'student_counts': student_counts_list,
+        'total_count': students.count(),
+        'chart_data': json.dumps(student_counts_list), 
+        
+    }
+    return render(request, 'admin/filter_students.html', context)
