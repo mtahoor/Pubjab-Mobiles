@@ -831,6 +831,12 @@ def filter_students_data(request):
     elif filter_type == 'registered_by' and filter_value:
         students = students.filter(who_enrolled_id=filter_value)
 
+    course_counts = (
+            students.values('enrollment__course__name')
+            .annotate(count=Count('id'))
+            .order_by('enrollment__course__name')
+        )
+
     # Group data by date
     student_counts = students.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
 
@@ -853,6 +859,7 @@ def filter_students_data(request):
         'student_counts': student_counts_list,
         'total_count': students.count(),
         'chart_data': json.dumps(student_counts_list), 
+        'course_counts': course_counts,
         
     }
     return render(request, 'admin/filter_students.html', context)

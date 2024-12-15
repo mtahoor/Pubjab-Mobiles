@@ -52,21 +52,26 @@ Student Filter
     <!-- Chart -->
     <canvas id="student-chart" width="400" height="200"></canvas>
 
-    <!-- Total Count -->
-    <div class="mt-3">
-        <h5>Total Students: {{ total_count }}</h5>
+    <!-- Course Counts -->
+    <div class="mt-4">
+        <h5>Course Counts</h5>
+        <ul>
+            {% for course in course_counts %}
+                <li>{{ course.enrollment__course__name }}: {{ course.count }}</li>
+            {% endfor %}
+        </ul>
+        <strong>Total: {{ total_count }}</strong>
     </div>
 </div>
 
 <!-- Chart Script -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-
     const chartData = JSON.parse('{{ chart_data|escapejs }}');
     console.log("Chart Data:", chartData);
 
-    const labels = chartData.map(entry => entry.date);  
-    const data = chartData.map(entry => entry.count);  
+    const labels = chartData.map(entry => entry.date);
+    const data = chartData.map(entry => entry.count);
 
     const ctx = document.getElementById('student-chart');
     if (ctx) {
@@ -85,5 +90,4 @@ Student Filter
         console.error("Canvas with id 'student-chart' not found.");
     }
 </script>
-
 {% endblock %}
