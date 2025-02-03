@@ -3,14 +3,16 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import *
 from .models import *
-from django.db.models import Q,Sum
+from django.db.models import Q,Sum,F,Value,FloatField
 from django.utils.timezone import now, timedelta
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password
 from django.db.models import Min
 from django.db.models import Count
 import json
-from django.db.models.functions import TruncDate
+from django.db.models.functions import TruncDate,Coalesce
+from datetime import datetime, timedelta
+
 
 
 @login_required
@@ -60,24 +62,38 @@ def admin_dashboard(request):
     if request.user.role != 'superuser':
         return redirect('custom_login')
     
-    filter_type = request.GET.get('filter', 'today')
-    if filter_type == 'today':
-        date_from = now().date()
-    elif filter_type == 'weekly':
-        date_from = now().date() - timedelta(days=7)
-    elif filter_type == 'monthly':
-        date_from = now().replace(day=1) 
+    # ✅ Get date range from the request
+    date_from = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    # ✅ Apply default values if not provided
+    if not date_from:
+        date_from = now().date()  # Default: last 7 days
     else:
-        date_from = now().date()
+        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
 
-    # New Seats: Number of students registered today/this week
-    new_seats = Student.objects.filter(created_at__date__gte=date_from).count()
+    if not to_date:
+        to_date = now().date()  # Default: today
+    else:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
 
-    # Installments: Students with installments due today/this week
+    # ✅ Filters for the new date range
+    new_seats = Student.objects.filter(created_at__date__range=(date_from, to_date)).count()
+
+
+
     installments_due = Installment.objects.filter(
         next_due_date__gte=date_from,
-        next_due_date__lte=now().date(),
-        payment_mode='installments'
+        next_due_date__lte=to_date,
+        payment_mode='installments',
+        enrollment__joined_date__isnull=False  # ✅ Only include enrollments with a joined date
+    ).count()
+
+
+    # Joined Students (Only count if joined today or in the date range)
+    joined_students_count = Enrollment.objects.filter(
+        joined_date__gte=date_from,
+        joined_date__lte=now().date()
     ).count()
 
     # Default Students: Students who missed due dates
@@ -190,14 +206,8 @@ def admin_dashboard(request):
                     transaction.save()
 
         return redirect('admin_dashboard')
-
-
-
-
-
-
-
-
+    from_date_str = date_from.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
     context = {
         'new_seats': new_seats,
         'installments_due': installments_due,
@@ -208,9 +218,11 @@ def admin_dashboard(request):
         'total_balance': total_balance,
         'bank_amount': bank_amount,
         'cash_amount': cash_amount,
-        'filter_type': filter_type,
         'pending_payments': pending_payments,
-        'tt_balance':tt_balance
+        'joined':joined_students_count,
+        'tt_balance':tt_balance,
+        'from':from_date_str,
+        'to':to_date_str,
     }
     return render(request, 'admin/admin_dashboard.html',context)
 
@@ -523,7 +535,6 @@ def list_students_for_fee_payment(request):
 
 @login_required
 def pay_fee(request, enrollment_id):
-
     if request.user.role == 'staff':
         base_template = 'base/staff_base.html'
     else:
@@ -551,6 +562,14 @@ def pay_fee(request, enrollment_id):
                 enrollment.save()
 
             installment.save()
+
+            total_paid_after_payment = Installment.objects.filter(
+                enrollment=enrollment
+            ).aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
+
+            if total_paid_after_payment >= 10000 and not enrollment.joined_date:
+                enrollment.joined_date = now().date()
+                enrollment.save()
             return redirect('list_students_for_fee_payment')
 
     else:
@@ -657,18 +676,115 @@ def new_seats(request):
     else:
         base_template = 'base/base.html'
 
-    filter_type = request.GET.get('filter', 'today')
-    if filter_type == 'today':
-        date_from = now().date()
-    elif filter_type == 'weekly':
-        date_from = now().date() - timedelta(days=7)
-    elif filter_type == 'monthly':
-        date_from = now().replace(day=1)
+    from_date = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
     else:
-        date_from = now().date()
-    students =  Student.objects.filter(created_at__date__gte=date_from).order_by('-id')
-    context = {'students': students,'base':base_template,'filter_type':filter_type}
+        from_date = now().date()
+
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+    else:
+        to_date = now().date()
+    # Student Query with Explicit Type Casting ✅
+    students = Student.objects.filter(
+        created_at__date__range=(from_date, to_date)
+    ).annotate(
+        total_fee=F('enrollment__course_fee'),
+        total_received=Coalesce(Sum(Cast('enrollment__installment__amount_paid', FloatField())), Value(0, output_field=FloatField())),
+        course_name=F('enrollment__course__name')
+    ).order_by('-id')
+
+    from_date_str = from_date.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
+    context = {'students': students,'base':base_template,'from':from_date_str,'to':to_date_str}
     return render(request, 'admin/new_seats.html', context)
+
+@login_required
+def new_joinings(request):
+    if request.user.role == 'staff':
+        base_template = 'base/staff_base.html'
+    else:
+        base_template = 'base/base.html'
+
+    from_date = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+    else:
+        from_date = now().date()
+
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+    else:
+        to_date = now().date()
+    # Student Query with Explicit Type Casting ✅
+    students = Student.objects.filter(
+        enrollment__joined_date__range=(from_date, to_date)
+    ).annotate(
+        total_fee=F('enrollment__course_fee'),
+        total_received=Coalesce(Sum(Cast('enrollment__installment__amount_paid', FloatField())), Value(0, output_field=FloatField())),
+        course_name=F('enrollment__course__name')
+    ).order_by('-enrollment__joined_date')
+
+    from_date_str = from_date.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
+    context = {'students': students,'base':base_template,'from':from_date_str,'to':to_date_str}
+    return render(request, 'admin/new_joinings.html', context)
+
+
+@login_required
+def recoveries(request):
+    if request.user.role == 'staff':
+        base_template = 'base/staff_base.html'
+    else:
+        base_template = 'base/base.html'
+
+    from_date = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+    else:
+        from_date = now().date()
+
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+    else:
+        to_date = now().date()
+    
+    # ✅ Filter Installments based on the date range and joined_date
+    installments = Installment.objects.filter(
+        date_paid__range=(from_date, to_date),                       # Filter by date range
+        date_paid__gt=F('enrollment__joined_date'), 
+    ).annotate(
+        student_name=F('enrollment__student__name'),
+        roll_number=F('enrollment__student__roll_number'),
+        course_name=F('enrollment__course__name'),
+        total_fee=F('enrollment__course_fee'),
+        collected_by_username=F('collected_by__username'),          
+        payment_method=F('transaction_method'),  
+        
+        # Total amount received for each student (after joined_date)
+        total_received=Coalesce(
+            Sum(
+                'enrollment__installment__amount_paid',
+                filter=Q(enrollment__installment__date_paid__gt=F('enrollment__joined_date'))
+            ),
+            Value(0, output_field=FloatField())
+        ),
+    ).order_by('-date_paid')
+    print(installments.first)
+
+    from_date_str = from_date.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
+    context = {'installments': installments,'base':base_template,'from':from_date_str,'to':to_date_str}
+    return render(request, 'admin/recovery.html', context)
+
+
 
 @login_required
 def installments_due(request):
@@ -676,21 +792,28 @@ def installments_due(request):
         base_template = 'base/staff_base.html'
     else:
         base_template = 'base/base.html'
-    filter_type = request.GET.get('filter', 'today')
-    if filter_type == 'today':
-        date_from = now().date()
-    elif filter_type == 'weekly':
-        date_from = now().date() - timedelta(days=7)
-    elif filter_type == 'monthly':
-        date_from = now().replace(day=1)
+    from_date = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
     else:
-        date_from = now().date()
+        from_date = now().date()
+
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+    else:
+        to_date = now().date()
     installments = Installment.objects.filter(
-        next_due_date__gte=date_from,
-        next_due_date__lte=now().date(),
-        payment_mode='installments'
+        next_due_date__gte=from_date,
+        next_due_date__lte=to_date,
+        payment_mode='installments',
+        enrollment__joined_date__isnull=False
     )
-    context = {'installments': installments,'base':base_template,'filter_type':filter_type}
+
+    from_date_str = from_date.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
+    context = {'installments': installments,'base':base_template,'from':from_date_str,'to':to_date_str}
     return render(request, 'admin/installments_due.html', context)
 
 @login_required
@@ -766,8 +889,29 @@ def all_transactions(request):
     # Calculate total balance
     total_balance = (total_income + total_installments) - total_expense
 
+      # Deposit: Total incoming approved transactions + installments paid
+    deposit_transactions = Transaction.objects.filter(
+        transaction_type='incoming',
+        status='approved',
+        created_at__date__gte=date_from
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    deposit_installments = Installment.objects.filter(
+        date_paid__gte=date_from
+    ).aggregate(total=Sum('amount_paid'))['total'] or 0
+
+    total_deposit = deposit_transactions + deposit_installments
+
+    # Withdraw: Total outgoing approved transactions
+    total_withdraw = Transaction.objects.filter(
+        transaction_type='outgoing',
+        created_at__date__gte=date_from
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
     context = {
         'transactions': transactions,
+        'total_deposit':total_deposit,
+        'total_withdraw':total_withdraw,
         'installments': installments,
         'total_balance': total_balance,
         'filter_type': filter_type,

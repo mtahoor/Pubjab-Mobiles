@@ -7,14 +7,14 @@ Admin Dashboard
 
    <!-- Sale & Revenue Start -->
     <!-- Filter Options -->
-    <div class="mb-4">
+    <div class=" bg-light rounded p-4 mb-4">
         <form method="GET">
-            <label for="filter">Filter By:</label>
-            <select name="filter" id="filter" class="form-control w-25 d-inline">
-                <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
-                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly</option>
-                <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>Monthly</option>
-            </select>
+            <label for="from_date">From:</label>
+            <input class="form-control w-25 d-inline" type="date" name="from" id="from_date" value="{{ from|default:'' }}">
+    
+            <label for="to_date">To:</label>
+            <input class="form-control w-25 d-inline" type="date" name="to" id="to_date" value="{{ to|default:'' }}">
+    
             <button type="submit" class="btn btn-primary">Apply</button>
         </form>
     </div>
@@ -27,7 +27,7 @@ Admin Dashboard
                 <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                     <i class="fa fa-graduation-cap fa-3x text-primary"></i>
                     <div class="ms-3">
-                        <p class="mb-2">New Seats</p>
+                        <p class="mb-2">Seats Booked</p>
                         <h6 class="mb-0">{{ new_seats }}</h6>
                     </div>
                 </div>
@@ -36,11 +36,24 @@ Admin Dashboard
     
         <!-- New Joinings -->
         <div class="col-sm-6 col-xl-3">
-            <a class="text-decoration-none">
+            <a href="{% url "new_joinings" %}" class="text-decoration-none">
                 <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                     <i class="fa fa-user-check fa-3x text-primary"></i>
                     <div class="ms-3">
-                        <p class="mb-2">New Joinings</p>
+                        <p class="mb-2">Joinings</p>
+                        <h6 class="mb-0">{{joined}}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+         <!-- Recoveries -->
+         <div class="col-sm-6 col-xl-3">
+            <a href="{% url "recoveries" %}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-coins fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">Recovery</p>
                         <h6 class="mb-0">0</h6>
                     </div>
                 </div>
@@ -72,9 +85,21 @@ Admin Dashboard
                 </div>
             </a>
         </div>
+        <div class="col-sm-12 col-xl-9">
+
+            <a href="{% url 'all_transactions' %}?filter={{ filter_type }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                    <i class="fa fa-wallet fa-3x text-primary"></i>
+                    <div class="ms-3">
+                        <p class="mb-2">Total</p>
+                        <h6 class="mb-0">Rs {{ tt_balance }}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
     
-    <div class="row g-4 mb-4">
+    {% comment %} <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                 <i class="fa fa-angle-double-down fa-3x text-primary"></i>
@@ -110,9 +135,9 @@ Admin Dashboard
                     <h6 class="mb-0">Rs {{ total_balance }}</h6>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="row g-4 mb-4">
+        </div> 
+    </div> {% endcomment %}
+    {% comment %} <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                 <i class="fa fa-university fa-3x text-primary"></i>
@@ -131,19 +156,8 @@ Admin Dashboard
                 </div>
             </div>
         </div>
-        <div class="col-sm-12 col-xl-6">
 
-            <a href="{% url 'all_transactions' %}?filter={{ filter_type }}" class="text-decoration-none">
-                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                    <i class="fa fa-wallet fa-3x text-primary"></i>
-                    <div class="ms-3">
-                        <p class="mb-2">Total</p>
-                        <h6 class="mb-0">Rs {{ tt_balance }}</h6>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
+    </div> {% endcomment %}
 
 <!-- Staff  -->
 

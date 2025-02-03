@@ -19,7 +19,7 @@
 <div class="bg-light rounded p-4 mb-4">
 
 <div class="container mt-4">
-    <h2>New Seats</h2>
+    <h2>New Joinings</h2>
     <div class="table-responsive">
         <table class="table table-bordered table-hover">
             <thead>
@@ -32,7 +32,8 @@
                     <th>Enrollment Via</th>
                     <th>Course</th>
                     <th>Enrolled By</th>
-                    <th>Date</th>
+                    <th>Registeration Date</th>
+                    <th>Joining Date</th>
                     <th>Paid</th>
                     <th>Total Fee</th>
                 </tr>
@@ -49,12 +50,13 @@
                     <td>{{ student.course_name }}</td>
                     <td>{{ student.who_enrolled.username }}</td>
                     <td>{{student.created_at}}</td>
+                    <td>{{student.enrollment_set.first.joined_date}}</td>
                     <td>{{ student.total_received }}</td>
                     <td>{{ student.total_fee }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center">No new seats today.</td>
+                    <td colspan="5" class="text-center">No new Joinings today.</td>
                 </tr>
                 {% endfor %}
             </tbody>

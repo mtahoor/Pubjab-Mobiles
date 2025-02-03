@@ -29,5 +29,7 @@ urlpatterns = [
     path('all-transactions/', views.all_transactions, name='all_transactions'), 
     path('change-staff-password/<int:user_id>/', views.change_staff_password, name='change_staff_password'),
     path('commision/', views.filter_students_data, name='filter_students_data'),
+    path('new_joinings/',views.new_joinings,name='new_joinings'),
+    path('recoveries/',views.recoveries,name='recoveries'),
    
 ]

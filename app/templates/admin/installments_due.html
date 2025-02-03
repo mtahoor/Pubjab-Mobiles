@@ -1,19 +1,16 @@
 {% extends base %}
 {% block content %}
 
-<div class="bg-light rounded p-4 mb-4">
+<div class=" bg-light rounded p-4 mb-4">
+    <form method="GET">
+        <label for="from_date">From:</label>
+        <input class="form-control w-25 d-inline" type="date" name="from" id="from_date" value="{{ from|default:'' }}">
 
-    <div class="">
-        <form method="GET">
-            <label for="filter">Filter By:</label>
-            <select name="filter" id="filter" class="form-control w-25 d-inline">
-                <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
-                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly</option>
-                <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>Monthly</option>
-            </select>
-            <button type="submit" class="btn btn-primary">Apply</button>
-        </form>
-    </div>
+        <label for="to_date">To:</label>
+        <input class="form-control w-25 d-inline" type="date" name="to" id="to_date" value="{{ to|default:'' }}">
+
+        <button type="submit" class="btn btn-primary">Apply</button>
+    </form>
 </div>
 
     

@@ -91,6 +91,7 @@ class Enrollment(models.Model):
     created_by = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(default=now)
     is_deleted = models.BooleanField(default=False)
+    joined_date = models.DateField(null=True, blank=True)
 
     objects = SoftDeleteManager()
 

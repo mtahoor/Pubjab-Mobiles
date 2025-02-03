@@ -19,7 +19,7 @@
 <div class="bg-light rounded p-4 mb-4">
 
 <div class="container mt-4">
-    <h2>New Seats</h2>
+    <h2>New Recovery</h2>
     <div class="table-responsive">
         <table class="table table-bordered table-hover">
             <thead>
@@ -27,34 +27,33 @@
                     <th>#</th>
                     <th>Roll Number</th>
                     <th>Name</th>
-                    <th>Phone Number</th>
-                    <th>Refrence</th>
-                    <th>Enrollment Via</th>
                     <th>Course</th>
-                    <th>Enrolled By</th>
-                    <th>Date</th>
+                    <th>Collected By</th>             
+                    <th>Payment Method</th>   
+                    <th>Date Paid</th>
                     <th>Paid</th>
+                    <th>Total Paid</th>
                     <th>Total Fee</th>
                 </tr>
             </thead>
             <tbody>
-                {% for student in students %}
+                {% for installment in installments %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ student.roll_number }}</td>
-                    <td>{{ student.name }}</td>
-                    <td>{{ student.phone_number }}</td>
-                    <td>{{ student.reference }}</td>
-                    <td>{{ student.enrollment_method }}</td>
-                    <td>{{ student.course_name }}</td>
-                    <td>{{ student.who_enrolled.username }}</td>
-                    <td>{{student.created_at}}</td>
-                    <td>{{ student.total_received }}</td>
-                    <td>{{ student.total_fee }}</td>
+                    <td>{{ installment.roll_number }}</td>
+                    <td>{{ installment.student_name }}</td>
+                    <td>{{ installment.course_name }}</td>
+                    <td>{{ installment.collected_by_username|default:"N/A" }}</td> 
+                    <td>{{ installment.payment_method|capfirst }}</td> 
+                    <td>{{ installment.date_paid }}</td>
+                    <td>Rs. {{ installment.amount_paid }}</td>
+                    <td>Rs. {{ installment.total_received }}</td>
+                    <td>Rs. {{ installment.total_fee }}</td>
+
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center">No new seats today.</td>
+                    <td colspan="5" class="text-center">No new Joinings today.</td>
                 </tr>
                 {% endfor %}
             </tbody>
