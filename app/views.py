@@ -514,7 +514,7 @@ def manage_students(request, student_id=None):
             return redirect('manage_students')
 
     # Fetch students for the table
-    students = Student.objects.all_with_deleted().order_by('-id')  # Newest first
+    students = Student.objects.all_with_deleted().order_by('-created_at')  # Newest first
 
     context = {
         'student_form': student_form,
@@ -555,12 +555,12 @@ def list_students_for_fee_payment(request):
             Q(roll_number__icontains=query),
             is_deleted=False,
             enrollment__enrollment_status='payment_pending'
-        ).distinct()
+        ).distinct().order_by('-created_at')
     else:
         students = Student.objects.filter(
             is_deleted=False,
             enrollment__enrollment_status='payment_pending'
-        ).distinct()
+        ).distinct().order_by('-created_at')
 
     # Annotate total_paid and remaining_fee for each student
     students_with_fees = []
