@@ -1,19 +1,16 @@
 {% extends base %}
 {% block content %}
 
-<div class="bg-light rounded p-4 mb-4">
+<div class=" bg-light rounded p-4 mb-4">
+    <form method="GET">
+        <label for="from_date">From:</label>
+        <input class="form-control w-25 d-inline" type="date" name="from" id="from_date" value="{{ from|default:'' }}">
 
-    <div class="mb-4">
-        <form method="GET">
-            <label for="filter">Filter By:</label>
-            <select name="filter" id="filter" class="form-control w-25 d-inline">
-                <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
-                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly</option>
-                <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>Monthly</option>
-            </select>
-            <button type="submit" class="btn btn-primary">Apply</button>
-        </form>
-    </div>
+        <label for="to_date">To:</label>
+        <input class="form-control w-25 d-inline" type="date" name="to" id="to_date" value="{{ to|default:'' }}">
+
+        <button type="submit" class="btn btn-primary">Apply</button>
+    </form>
 </div>
 
 <div class="bg-light rounded p-4 mb-4">    
@@ -28,6 +25,8 @@
                     <th>Roll Number</th>
                     <th>Course</th>
                     <th>Amount Due</th>
+                    <th>Total Paid</th>
+                    <th>Total</th>
                     <th>Due Date</th>
                 </tr>
             </thead>
@@ -35,11 +34,13 @@
                 {% for installment in installments %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ installment.enrollment.student.name }}</td>
-                    <td>{{ installment.enrollment.student.roll_number }}</td>
-                    <td>{{ installment.enrollment.course.name }}</td>
-                    <td>${{ installment.remaining_fee }}</td>
-                    <td>{{ installment.next_due_date }}</td>
+                    <td>{{ installment.student.name }}</td>
+                    <td>{{ installment.student.roll_number }}</td>
+                    <td>{{ installment.course.name }}</td>
+                    <td>Rs {{ installment.remaining_fee }}</td>
+                    <td>Rs {{ installment.total_paid }}</td>
+                    <td>Rs {{ installment.course_fee }}</td>
+                    <td>{{ installment.last_installment_date }}</td>
                 </tr>
                 {% empty %}
                 <tr>

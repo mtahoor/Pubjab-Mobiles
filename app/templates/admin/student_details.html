@@ -1,117 +1,151 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8"> 
-    <title>{% block title %} {% endblock title %}</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="" name="keywords">
-    <meta content="" name="description">
-
-    <!-- Favicon -->
-    <link href="{% static 'assets/img/favicon.ico' %}" rel="icon" />
-
-
-    <!-- Google Web Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    
-
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="{% static 'assets/lib/owlcarousel/assets/owl.carousel.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'assets/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'assets/css/bootstrap.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'assets/css/style.css' %}" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <title>Payment Slip - {{ student.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f9f9f9;
+            position: relative;
+        }
+        .container {
+            background: white;
+            border: 2px solid #000;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+            position: relative;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .logo img {
+            width: 150px;
+        }
+        h2, h4 {
+            text-align: center;
+            margin: 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+        }
+        .summary {
+            margin-top: 20px;
+            text-align: right;
+            font-weight: bold;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+        /* ✅ Watermark */
+        .watermark {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 80px;
+            color: rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
 </head>
-
 <body>
-<div class="container mt-4">
+    <div class="container">
 
-    <center>
-        <img src="{% static "assets/img/logo.png" %}" class="w-50" alt="">
-    </center>
+        <!-- ✅ Logo -->
+        <div class="logo">
+            <img src="{% static 'assets/img/logo.png' %}" alt="Punjab Mobiles Logo">
+        </div>
 
-    <!-- Student Information -->
-    <div class="bg-light rounded p-4 mb-4">
-        <div class="row">
-            <div class="col-6">
+        <h2>Punjab Mobile Repairing and Training Center</h2>
+        <h4>Registration / Payment Slip</h4>
 
-                <h5>Student Information</h5>
-                <p><strong>Name:</strong> {{ student.name }}</p>
-                <p><strong>Father Name:</strong> {{ student.father_name }}</p>
-                <p><strong>CNIC:</strong> {{ student.cnic }}</p>
-                <p><strong>Phone Number:</strong> {{ student.phone_number }}</p>
-                <p><strong>Enrolled By:</strong> {{ student.who_enrolled.username }}</p>
+        <!-- ✅ Watermark (Only if Paid in Full) -->
 
+        <div class="watermark">PAID</div>
+
+        <!-- Student Info -->
+        <p><strong>Student Name:</strong> {{ student.name }}</p>
+        <p><strong>Father's Name:</strong> {{ student.father_name }}</p>
+        <p><strong>Phone Number:</strong> {{ student.phone_number }}</p>
+        <p><strong>Enrolled By:</strong> {{ student.who_enrolled.username }}</p>
+
+        <h4>Enrollment Details</h4>
+        <table>
+            <tr>
+                <th>Course</th>
+                <th>Fee (PKR)</th>
+            </tr>
+            {% for enrollment in enrollments %}
+            <tr>
+                <td>{{ enrollment.course.name }}</td>
+                <td>{{ enrollment.course_fee }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h4>Installments</h4>
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Amount Paid</th>
+                <th>Date Paid</th>
+                <th>Next Due Date</th>
+                <th>Collected By</th>
+            </tr>
+            {% for installment in installments %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>PKR {{ installment.amount_paid }}</td>
+                <td>{{ installment.date_paid }}</td>
+                <td>{{ installment.next_due_date|default:"-" }}</td>
+                <td>{{ installment.collected_by.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No installments found.</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div style='display:flex ;justify-content: space-between'>
+            <!-- Terms & Conditions Section -->
+            <div style="width: 60%;">
+                <h5>Terms & Conditions:</h5>
+                <ul>
+                    <li>Fee paid is non-reversible in any condition.</li>
+                    <li>Additional charges may apply in case of any damage or loss of tools, mobile phones, etc.</li>
+                </ul>
             </div>
-            <div class="col-6">
-                <h5>Enrollment Information</h5>
-                {% for enrollment in enrollments %}
-                <p><strong>Course:</strong> {{ enrollment.course.name }}</p>
-                <p><strong>Total Fee:</strong> {{ enrollment.course_fee }}</p>
-                {% endfor %}
+        
+            <!-- Payment Summary Section -->
+            <div style="width: 40%; text-align: right;">
+                <p><strong>Total Fee:</strong> PKR {{ total_fee }}</p>
+                <p><strong>Total Paid:</strong> PKR {{ total_paid }}</p>
+                <p><strong>Remaining Fee:</strong> PKR {{ remaining_fee }}</p>
             </div>
         </div>
+        <table>
+            <th>Thank You for Your Trust</th>
+        </table>
+
+        <button class="no-print" onclick="window.print()">Print This Slip</button>
     </div>
-
-
-    <!-- Installments -->
-    <div class="bg-light rounded p-4 mb-4">
-        <h5>Installment Payments</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Amount Paid</th>
-                        <th>Date Paid</th>
-                        <th>Next Due Date</th>
-                        <th>Collected By</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for installment in installments %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>{{ installment.amount_paid }}</td>
-                        <td>{{ installment.date_paid }}</td>
-                        <td>{% if installment.next_due_date %}{{ installment.next_due_date }}{% else %}-{% endif %}</td>
-                        <td>{{ installment.collected_by.username }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">No installments found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Payment Summary -->
-    <div class="bg-light rounded p-4 d-flex align-items-center justify-content-around">
-        <h5>Payment Summary</h5>
-        <p><strong>Total Fee:</strong><b> {{ total_fee }}</b></p>
-        <p><strong>Total Paid:</strong> <b>{{ total_paid }}</b></p>
-        <p><strong>Remaining Fee:</strong> <b>{{ remaining_fee }}</b></p>
-    </div>
-</div>
-
-    <!-- JavaScript Libraries -->
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'assets/lib/chart/chart.min.js' %}"></script>
-    <script src="{% static 'assets/lib/easing/easing.min.js' %}"></script>
-    <script src="{% static 'assets/lib/waypoints/waypoints.min.js' %}"></script>
-    <script src="{% static 'assets/lib/owlcarousel/owl.carousel.min.js' %}"></script>
-    <script src="{% static 'assets/lib/tempusdominus/js/moment.min.js' %}"></script>
-    <script src="{% static 'assets/lib/tempusdominus/js/moment-timezone.min.js' %}"></script>
-    <script src="{% static 'assets/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js' %}"></script>
-    <script src="{% static 'assets/js/main.js' %}"></script>
 </body>
-
 </html>

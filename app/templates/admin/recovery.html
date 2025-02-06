@@ -21,43 +21,64 @@
 <div class="container mt-4">
     <h2>New Recovery</h2>
     <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Roll Number</th>
-                    <th>Name</th>
-                    <th>Course</th>
-                    <th>Collected By</th>             
-                    <th>Payment Method</th>   
-                    <th>Date Paid</th>
-                    <th>Paid</th>
-                    <th>Total Paid</th>
-                    <th>Total Fee</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for installment in installments %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ installment.roll_number }}</td>
-                    <td>{{ installment.student_name }}</td>
-                    <td>{{ installment.course_name }}</td>
-                    <td>{{ installment.collected_by_username|default:"N/A" }}</td> 
-                    <td>{{ installment.payment_method|capfirst }}</td> 
-                    <td>{{ installment.date_paid }}</td>
-                    <td>Rs. {{ installment.amount_paid }}</td>
-                    <td>Rs. {{ installment.total_received }}</td>
-                    <td>Rs. {{ installment.total_fee }}</td>
-
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center">No new Joinings today.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <form method="POST">
+            {% csrf_token %}
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Roll Number</th>
+                        <th>Name</th>
+                        <th>Course</th>
+                        <th>Collected By</th>             
+                        <th>Payment Method</th>   
+                        <th>Date Paid</th>
+                        <th>Paid</th>
+                        <th>Total Paid</th>
+                        <th>Total Fee</th>
+                        {% if request.user.role == 'superuser' %}
+                        <th>Status</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for installment in installments %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ installment.roll_number }}</td>
+                        <td>{{ installment.student_name }}</td>
+                        <td>{{ installment.course_name }}</td>
+                        <td>{{ installment.collected_by_username|default:"N/A" }}</td> 
+                        <td>{{ installment.payment_method|capfirst }}</td> 
+                        <td>{{ installment.date_paid }}</td>
+                        <td>Rs. {{ installment.amount_paid }}</td>
+                        <td>Rs. {{ installment.total_received }}</td>
+                        <td>Rs. {{ installment.total_fee }}</td>
+                        {% if request.user.role == 'superuser' %}
+                        <td>
+                            <input type="hidden" name="approve_record_{{ installment.id }}" value="off">
+                            <input 
+                                class="form-check-input" 
+                                type="checkbox" 
+                                name="approve_record_{{ installment.id }}" 
+                                {% if installment.status == 'approved' %}checked{% endif %}
+                            >
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No new Joinings today.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if request.user.role == 'superuser' %}
+            <div class="d-flex justify-content-end">
+                <input class="btn btn-primary" type="submit" value="Update Status">
+            </div>
+            {% endif %}
+        </form>
     </div>
 </div>
 </div>

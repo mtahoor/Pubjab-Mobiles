@@ -39,7 +39,7 @@ Manage Students
                             {% if student.is_deleted %}Activate{% else %}Default{% endif %}
                         </a>
                         {% endif %}
-                        <a href="{% url "student_details" student.id %}" target="_blank" class="btn btn-sm btn-primary">View</a>
+                        <a href="{% url 'student_details' student.id %}" target="_blank" class="btn btn-sm btn-primary">View / Print</a>
                     </td>
                 </tr>
                 {% endfor %}

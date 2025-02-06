@@ -58,34 +58,61 @@
 
         <h6>Transactions</h6>
         <div class="table-responsive mb-4">
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for transaction in transactions %}
-                    <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>{{ transaction.transaction_type }}</td>
-                        <td>{{ transaction.description }}</td>
-                        <td class="{% if transaction.transaction_type == "outgoing" %}text-danger{% else %}text-success{% endif %}">Rs {{ transaction.amount }}
-                            {% if transaction.transaction_type == "outgoing" %}-{% else %}+{% endif %}
-                        </td>
-                        <td>{{ transaction.status }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">No transactions found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <form method="POST">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>By Person</th>
+                            <th>Date</th>
+                            {% if request.user.role == 'superuser' %}
+                            <th>Action</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        {% csrf_token %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ transaction.transaction_type }}</td>
+                            <td>{{ transaction.description }}</td>
+                            <td class="{% if transaction.transaction_type == "outgoing" %}text-danger{% else %}text-success{% endif %}">Rs {{ transaction.amount }}
+                                {% if transaction.transaction_type == "outgoing" %}-{% else %}+{% endif %}
+                            </td>
+                            <td>{{ transaction.status }}</td>
+                            <td>{{ transaction.created_by }}</td>
+                            <td>{{ transaction.created_at }}</td>
+                            {% if request.user.role == 'superuser' %}
+                            <td>
+                                <input type="hidden" name="approve_record_{{ transaction.id }}" value="off">
+
+                                <input 
+                                    class="form-check-input" 
+                                    type="checkbox" 
+                                    name="approve_record_{{ transaction.id }}" 
+                                    {% if transaction.status == 'approved' %}checked{% endif %}
+                                >
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No transactions found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if request.user.role == 'superuser' %}
+                <div class="d-flex justify-content-end">
+                    <input class="btn btn-primary" type="submit" value="Update Status">
+                </div>
+                {% endif %}
+            </form>
         </div>
     </div>
 

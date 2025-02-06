@@ -7,11 +7,11 @@ from django.db.models import Q,Sum,F,Value,FloatField
 from django.utils.timezone import now, timedelta
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password
-from django.db.models import Min
-from django.db.models import Count
+from django.db.models import Subquery, OuterRef, Min, Count
 import json
 from django.db.models.functions import TruncDate,Coalesce
 from datetime import datetime, timedelta
+from django.urls import reverse
 
 
 
@@ -81,13 +81,17 @@ def admin_dashboard(request):
     new_seats = Student.objects.filter(created_at__date__range=(date_from, to_date)).count()
 
 
+    last_installment_subquery = Installment.objects.filter(
+        enrollment=OuterRef('pk')  # Match the current enrollment
+    ).order_by('-created_at')       # ✅ Latest installment comes first (descending order)
 
-    installments_due = Installment.objects.filter(
-        next_due_date__gte=date_from,
-        next_due_date__lte=to_date,
-        payment_mode='installments',
-        enrollment__joined_date__isnull=False  # ✅ Only include enrollments with a joined date
-    ).count()
+    # Main Query: Get all enrollments along with their latest installment
+    installments_due = Enrollment.objects.annotate(
+        last_installment_date=Subquery(last_installment_subquery.values('next_due_date')[:1]),      # Status
+    ).filter(
+        last_installment_date__range=(date_from, to_date)
+    ).select_related('student', 'course').order_by('last_installment_date').count()
+
 
 
     # Joined Students (Only count if joined today or in the date range)
@@ -97,10 +101,21 @@ def admin_dashboard(request):
     ).count()
 
     # Default Students: Students who missed due dates
-    default_students = Installment.objects.filter(
-        next_due_date__lt=now().date(),
-        status='pending'
+    date_f=date_from-timedelta(days=1)
+    to_d=to_date-timedelta(days=1)
+    default_students =  Enrollment.objects.annotate(
+        last_installment_date=Subquery(last_installment_subquery.values('next_due_date')[:1]),      # Status
+    ).filter(
+        last_installment_date__range=(date_f, to_d)
+    ).select_related('student', 'course').order_by('last_installment_date').count()
+
+
+
+    recover=Installment.objects.filter(
+        date_paid__range=(date_from, to_date),                       # Filter by date range
+        date_paid__gt=F('enrollment__joined_date'), 
     ).count()
+
 
     # Deposit: Total incoming approved transactions + installments paid
     deposit_transactions = Transaction.objects.filter(
@@ -212,6 +227,7 @@ def admin_dashboard(request):
         'new_seats': new_seats,
         'installments_due': installments_due,
         'default_students': default_students,
+        'recoveries':recover,
         'total_deposit': total_deposit,
         'total_withdraw': total_withdraw,
         'pending_pays': pending_pays,
@@ -231,31 +247,61 @@ def staff_dashboard(request):
     if request.user.role != 'staff':
         return redirect('custom_login')
     
-    filter_type = request.GET.get('filter', 'today')
-    if filter_type == 'today':
-        date_from = now().date()
-    elif filter_type == 'weekly':
-        date_from = now().date() - timedelta(days=7)
-    elif filter_type == 'monthly':
-        date_from = now().replace(day=1)
+     # ✅ Get date range from the request
+    date_from = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    # ✅ Apply default values if not provided
+    if not date_from:
+        date_from = now().date()  # Default: last 7 days
     else:
-        date_from = now().date()
+        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
 
-    # New Seats: Number of students registered today/this week
-    new_seats = Student.objects.filter(created_at__date__gte=date_from).count()
+    if not to_date:
+        to_date = now().date()  # Default: today
+    else:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
 
-    # Installments: Students with installments due today/this week
-    installments_due = Installment.objects.filter(
-        next_due_date__gte=date_from,
-        next_due_date__lte=now().date(),
-        payment_mode='installments'
+    # ✅ Filters for the new date range
+    new_seats = Student.objects.filter(created_at__date__range=(date_from, to_date)).count()
+
+
+
+    last_installment_subquery = Installment.objects.filter(
+        enrollment=OuterRef('pk')  # Match the current enrollment
+    ).order_by('-created_at')       # ✅ Latest installment comes first (descending order)
+
+    # Main Query: Get all enrollments along with their latest installment
+    installments_due = Enrollment.objects.annotate(
+        last_installment_date=Subquery(last_installment_subquery.values('next_due_date')[:1]),      # Status
+    ).filter(
+        last_installment_date__range=(date_from, to_date)
+    ).select_related('student', 'course').order_by('last_installment_date').count()
+
+
+
+    # Joined Students (Only count if joined today or in the date range)
+    joined_students_count = Enrollment.objects.filter(
+        joined_date__gte=date_from,
+        joined_date__lte=now().date()
     ).count()
 
     # Default Students: Students who missed due dates
-    default_students = Installment.objects.filter(
-        next_due_date__lt=now().date(),
-        status='pending'
+    date_f=date_from-timedelta(days=1)
+    to_d=to_date-timedelta(days=1)
+    default_students =  Enrollment.objects.annotate(
+        last_installment_date=Subquery(last_installment_subquery.values('next_due_date')[:1]),      # Status
+    ).filter(
+        last_installment_date__range=(date_f, to_d)
+    ).select_related('student', 'course').order_by('last_installment_date').count()
+
+
+
+    recover=Installment.objects.filter(
+        date_paid__range=(date_from, to_date),                       # Filter by date range
+        date_paid__gt=F('enrollment__joined_date'), 
     ).count()
+
 
     # Deposit: Total incoming approved transactions + installments paid
     deposit_transactions = Transaction.objects.filter(
@@ -307,6 +353,8 @@ def staff_dashboard(request):
 
 
 
+    from_date_str = date_from.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
     context = {
         'new_seats': new_seats,
         'installments_due': installments_due,
@@ -317,8 +365,11 @@ def staff_dashboard(request):
         'total_balance': total_balance,
         'bank_amount': bank_amount,
         'cash_amount': cash_amount,
-        'filter_type': filter_type,
-        'tt_balance':tt_balance
+        'tt_balance':tt_balance,
+        'from':from_date_str,
+        'to':to_date_str,
+        'joined':joined_students_count,
+        'recoveries':recover,
     }
     
     return render(request, 'staff/staff_dashboard.html',context)
@@ -451,6 +502,10 @@ def manage_students(request, student_id=None):
 
                     # Update enrollment status
                     enrollment.enrollment_status = "paid"
+                    enrollment.save()
+                
+                if installment.amount_paid>9999:
+                    enrollment.joined_date=datetime.now()
                     enrollment.save()
 
                 # Save installment
@@ -651,10 +706,8 @@ def all_students(request):
 def student_details(request, student_id):
     student = get_object_or_404(Student, id=student_id)
     enrollments = Enrollment.objects.filter(student=student)
-
     total_paid = Installment.objects.filter(enrollment__student=student).aggregate(Sum('amount_paid'))['amount_paid__sum'] or 0
     remaining_fee = sum(enrollment.course_fee for enrollment in enrollments) - total_paid
-
     installments = Installment.objects.filter(enrollment__student=student).select_related('collected_by', 'enrollment')
 
     context = {
@@ -666,6 +719,7 @@ def student_details(request, student_id):
         'remaining_fee': remaining_fee,
     }
     return render(request, 'admin/student_details.html', context)
+
 
 
 
@@ -688,14 +742,60 @@ def new_seats(request):
         to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     else:
         to_date = now().date()
-    # Student Query with Explicit Type Casting ✅
+
+    if request.method == 'POST':
+        for key in request.POST:
+            if key.startswith('approve_record_'):
+                installment_id = key.replace('approve_record_', '')
+
+                try:
+                    # ✅ Get the installment by ID
+                    installment = Installment.objects.get(id=installment_id)
+
+                    # ✅ Update the status based on the checkbox
+                    if request.POST.get(key) == 'on':
+                        installment.status = 'approved'
+                    else:
+                        installment.status = 'pending'
+
+                    installment.save()  # Save changes
+
+                except Installment.DoesNotExist:
+                    pass  # Ignore if installment doesn't exist
+        
+        return redirect(f"{reverse('new_seats')}?from={from_date}&to={to_date}")
+    # Subquery to get the first installment (earliest)
+    first_installment_query = Installment.objects.filter(
+        enrollment__student=OuterRef('pk')  # Match the student
+    ).order_by('date_paid').values('id', 'amount_paid','transaction_method', 'status')[:1]  # Get first installment
+
     students = Student.objects.filter(
         created_at__date__range=(from_date, to_date)
     ).annotate(
         total_fee=F('enrollment__course_fee'),
-        total_received=Coalesce(Sum(Cast('enrollment__installment__amount_paid', FloatField())), Value(0, output_field=FloatField())),
+
+        # ✅ First installment amount
+        first_installment_fee=Coalesce(
+            Subquery(first_installment_query.values('amount_paid')[:1]),
+            Value(0, output_field=FloatField())
+        ),
+        # ✅ Total received (all installments for the student)
+        total_received=Coalesce(
+            Sum('enrollment__installment__amount_paid'),
+            Value(0, output_field=FloatField())
+        ),
+
+        # ✅ First installment ID
+        first_installment_id=Subquery(first_installment_query.values('id')[:1]),
+
+        # ✅ First installment Status
+        first_installment_status=Subquery(first_installment_query.values('status')[:1]),
+
+        first_installment_transaction_method=Subquery(first_installment_query.values('transaction_method')[:1]),
+
+
         course_name=F('enrollment__course__name')
-    ).order_by('-id')
+    ).order_by('-created_at')
 
     from_date_str = from_date.strftime('%Y-%m-%d')
     to_date_str = to_date.strftime('%Y-%m-%d')
@@ -721,14 +821,61 @@ def new_joinings(request):
         to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     else:
         to_date = now().date()
+
+    if request.method == 'POST':
+        for key in request.POST:
+            if key.startswith('approve_record_'):
+                installment_id = key.replace('approve_record_', '')
+
+                try:
+                    # ✅ Get the installment by ID
+                    installment = Installment.objects.get(id=installment_id)
+
+                    # ✅ Update the status based on the checkbox
+                    if request.POST.get(key) == 'on':
+                        installment.status = 'approved'
+                    else:
+                        installment.status = 'pending'
+
+                    installment.save()  # Save changes
+
+                except Installment.DoesNotExist:
+                    pass  # Ignore if installment doesn't exist
+        
+        return redirect(f"{reverse('new_joinings')}?from={from_date}&to={to_date}")
+
+
+    latest_installment_subquery = Installment.objects.filter(
+        enrollment=OuterRef('enrollment'),
+        date_paid=F('enrollment__joined_date')
+    ).order_by('-date_paid', '-id')  # Get the latest installment based on date and ID
+
     # Student Query with Explicit Type Casting ✅
     students = Student.objects.filter(
         enrollment__joined_date__range=(from_date, to_date)
     ).annotate(
         total_fee=F('enrollment__course_fee'),
         total_received=Coalesce(Sum(Cast('enrollment__installment__amount_paid', FloatField())), Value(0, output_field=FloatField())),
-        course_name=F('enrollment__course__name')
-    ).order_by('-enrollment__joined_date')
+        course_name=F('enrollment__course__name'),
+         # ✅ Fetch the latest installment paid amount on joined_date
+        paid=Coalesce(
+            Subquery(latest_installment_subquery.values('amount_paid')[:1]),
+            Value(0, output_field=FloatField())
+        ),
+         # ✅ Transaction ID from the latest installment
+        transaction_id=Subquery(
+            latest_installment_subquery.values('id')[:1]
+        ),
+
+        # ✅ Status of the latest installment
+        latest_status=Subquery(
+            latest_installment_subquery.values('status')[:1]
+        ),
+
+        transaction_method=Subquery(
+            latest_installment_subquery.values('transaction_method')[:1]
+        )
+    ).order_by('-created_at')
 
     from_date_str = from_date.strftime('%Y-%m-%d')
     to_date_str = to_date.strftime('%Y-%m-%d')
@@ -755,6 +902,30 @@ def recoveries(request):
         to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     else:
         to_date = now().date()
+
+
+    if request.method == 'POST':
+        for key in request.POST:
+            if key.startswith('approve_record_'):
+                installment_id = key.replace('approve_record_', '')
+
+                try:
+                    # ✅ Get the installment by ID
+                    installment = Installment.objects.get(id=installment_id)
+
+                    # ✅ Update the status based on the checkbox
+                    if request.POST.get(key) == 'on':
+                        installment.status = 'approved'
+                    else:
+                        installment.status = 'pending'
+
+                    installment.save()  # Save changes
+
+                except Installment.DoesNotExist:
+                    pass  # Ignore if installment doesn't exist
+        
+        return redirect(f"{reverse('recoveries')}?from={from_date}&to={to_date}")
+
     
     # ✅ Filter Installments based on the date range and joined_date
     installments = Installment.objects.filter(
@@ -772,12 +943,10 @@ def recoveries(request):
         total_received=Coalesce(
             Sum(
                 'enrollment__installment__amount_paid',
-                filter=Q(enrollment__installment__date_paid__gt=F('enrollment__joined_date'))
             ),
             Value(0, output_field=FloatField())
         ),
     ).order_by('-date_paid')
-    print(installments.first)
 
     from_date_str = from_date.strftime('%Y-%m-%d')
     to_date_str = to_date.strftime('%Y-%m-%d')
@@ -804,12 +973,19 @@ def installments_due(request):
         to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     else:
         to_date = now().date()
-    installments = Installment.objects.filter(
-        next_due_date__gte=from_date,
-        next_due_date__lte=to_date,
-        payment_mode='installments',
-        enrollment__joined_date__isnull=False
-    )
+    last_installment_subquery = Installment.objects.filter(
+        enrollment=OuterRef('pk')  # Match the current enrollment
+    ).order_by('-created_at')       # ✅ Latest installment comes first (descending order)
+
+    # Main Query: Get all enrollments along with their latest installment
+    installments = Enrollment.objects.annotate(
+        last_installment_id=Subquery(last_installment_subquery.values('id')[:1]),           # Installment ID
+        last_installment_amount=Subquery(last_installment_subquery.values('amount_paid')[:1]),  # Amount Paid
+        last_installment_date=Subquery(last_installment_subquery.values('next_due_date')[:1]),      # Date Paid
+        last_installment_status=Subquery(last_installment_subquery.values('status')[:1])        # Status
+    ).filter(
+        last_installment_date__range=(from_date, to_date)
+    ).select_related('student', 'course').order_by('-last_installment_date')
 
     from_date_str = from_date.strftime('%Y-%m-%d')
     to_date_str = to_date.strftime('%Y-%m-%d')
@@ -822,31 +998,70 @@ def default_students(request):
         base_template = 'base/staff_base.html'
     else:
         base_template = 'base/base.html'
-    filter_type = request.GET.get('filter', 'today')
-    if filter_type == 'today':
-        date_from = now().date()
-    elif filter_type == 'weekly':
-        date_from = now().date() - timedelta(days=7)
-    elif filter_type == 'monthly':
-        date_from = now().replace(day=1)
+    from_date = request.GET.get('from')
+    to_date = request.GET.get('to')
+
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
     else:
-        date_from = now().date()
-    installments = Installment.objects.filter(
-        next_due_date__gte=date_from,
-        next_due_date__lt=now().date(),
-        status='pending'
-    ).select_related('enrollment__student', 'enrollment__course')
+        from_date = now().date()
+
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+    else:
+        to_date = now().date()
+
+    froom_date=from_date-timedelta(days=1)
+    too_date= to_date-timedelta(days=1)
+        
+    last_installment_subquery = Installment.objects.filter(
+        enrollment=OuterRef('pk')  # Match the current enrollment
+    ).order_by('-created_at')       # ✅ Latest installment comes first (descending order)
+
+    # Main Query: Get all enrollments along with their latest installment
+    installments = Enrollment.objects.annotate(
+        last_installment_id=Subquery(last_installment_subquery.values('id')[:1]),           # Installment ID
+        last_installment_amount=Subquery(last_installment_subquery.values('amount_paid')[:1]),  # Amount Paid
+        last_installment_date=Subquery(last_installment_subquery.values('next_due_date')[:1]),      # Date Paid
+        last_installment_status=Subquery(last_installment_subquery.values('status')[:1]),        # Status
+        # ✅ Total Paid using Subquery & Coalesce (to handle NULL values)
+        total_paid=Coalesce(
+            Subquery(
+                Installment.objects.filter(
+                    enrollment=OuterRef('pk')
+                ).values('enrollment')  # Group by enrollment
+                .annotate(total=Sum('amount_paid'))  # Sum of amount_paid
+                .values('total')[:1]
+            ),
+            Value(0, output_field=FloatField())
+        ),
+
+        # ✅ Calculate Remaining Fee
+        remaining_fee=F('course_fee') - Coalesce(
+            Subquery(
+                Installment.objects.filter(
+                    enrollment=OuterRef('pk')
+                ).values('enrollment')  
+                .annotate(total=Sum('amount_paid'))
+                .values('total')[:1]
+            ),
+            Value(0, output_field=FloatField())
+        )
+    ).filter(
+        last_installment_date__range=(froom_date, too_date)
+    ).select_related('student', 'course').order_by('-last_installment_date')
 
     # Calculate the remaining fee for each installment's course
-    for installment in installments:
-        total_paid = Installment.objects.filter(
-            enrollment=installment.enrollment,
-            # status='approved'  # Only approved payments count
-        ).aggregate(total=Sum('amount_paid'))['total'] or 0
-        installment.remaining_fee = installment.enrollment.course_fee - total_paid
+    # for installment in installments:
+    #     total_paid = Installment.objects.filter(
+    #         enrollment=installment.enrollment,
+    #         # status='approved'  # Only approved payments count
+    #     ).aggregate(total=Sum('amount_paid'))['total'] or 0
+    #     installment.remaining_fee = installment.enrollment.course_fee - total_paid
 
-
-    context = {'installments': installments,'base':base_template,'filter_type':filter_type}
+    from_date_str = from_date.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
+    context = {'installments': installments,'base':base_template,'from':from_date_str,'to':to_date_str}
     return render(request, 'admin/default_students.html', context)
 
 
@@ -857,21 +1072,47 @@ def all_transactions(request):
     else:
         base_template = 'base/base.html'
     # Determine the filter type
-    filter_type = request.GET.get('filter', 'today')
-    if filter_type == 'today':
-        date_from = now().date()
-    elif filter_type == 'weekly':
-        date_from = now().date() - timedelta(days=7)
-    elif filter_type == 'monthly':
-        date_from = now().replace(day=1)
+
+    from_date = request.GET.get('from')
+    to_date = request.GET.get('to')
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
     else:
-        date_from = now().date()
+        from_date = now().date()
+
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
+    else:
+        to_date = now().date()
+
+
+    if request.method == 'POST':
+        for key in request.POST:
+            if key.startswith('approve_record_'):
+                installment_id = key.replace('approve_record_', '')
+
+                try:
+                    # ✅ Get the installment by ID
+                    installment = Transaction.objects.get(id=installment_id)
+
+                    # ✅ Update the status based on the checkbox
+                    if request.POST.get(key) == 'on':
+                        installment.status = 'approved'
+                    else:
+                        installment.status = 'pending'
+
+                    installment.save()  # Save changes
+
+                except Transaction.DoesNotExist:
+                    pass  # Ignore if installment doesn't exist
+        
+        return redirect('all_transactions')
 
     # Fetch filtered transactions (approved and pending within the date range)
-    transactions = Transaction.objects.filter(created_at__date__gte=date_from)
+    transactions = Transaction.objects.filter(created_at__date__gte=from_date)
 
     # Fetch filtered installments (approved and pending within the date range)
-    installments = Installment.objects.filter(date_paid__gte=date_from).select_related('enrollment__student', 'collected_by')
+    installments = Installment.objects.filter(date_paid__gte=from_date).select_related('enrollment__student', 'collected_by')
 
     # Calculate the total balance
     approved_transactions = transactions.filter()
@@ -893,11 +1134,11 @@ def all_transactions(request):
     deposit_transactions = Transaction.objects.filter(
         transaction_type='incoming',
         status='approved',
-        created_at__date__gte=date_from
+        created_at__date__gte=from_date
     ).aggregate(total=Sum('amount'))['total'] or 0
 
     deposit_installments = Installment.objects.filter(
-        date_paid__gte=date_from
+        date_paid__gte=from_date
     ).aggregate(total=Sum('amount_paid'))['total'] or 0
 
     total_deposit = deposit_transactions + deposit_installments
@@ -905,8 +1146,12 @@ def all_transactions(request):
     # Withdraw: Total outgoing approved transactions
     total_withdraw = Transaction.objects.filter(
         transaction_type='outgoing',
-        created_at__date__gte=date_from
+        created_at__date__gte=from_date
     ).aggregate(total=Sum('amount'))['total'] or 0
+
+
+    from_date_str = from_date.strftime('%Y-%m-%d')
+    to_date_str = to_date.strftime('%Y-%m-%d')
 
     context = {
         'transactions': transactions,
@@ -914,8 +1159,9 @@ def all_transactions(request):
         'total_withdraw':total_withdraw,
         'installments': installments,
         'total_balance': total_balance,
-        'filter_type': filter_type,
-        'base':base_template
+        'base':base_template,
+        'from':from_date_str,
+        'to':to_date_str,
     }
     return render(request, 'admin/all_transactions.html', context)
 

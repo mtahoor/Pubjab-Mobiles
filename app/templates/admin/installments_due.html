@@ -33,10 +33,10 @@
                 {% for installment in installments %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ installment.enrollment.student.name }}</td>
-                    <td>{{ installment.enrollment.course.name }}</td>
-                    <td>{{ installment.amount_paid }}</td>
-                    <td>{{ installment.next_due_date }}</td>
+                    <td>{{ installment.student.name }}</td>
+                    <td>{{ installment.course.name }}</td>
+                    <td>{{ installment.last_installment_amount }}</td>
+                    <td>{{ installment.last_installment_date }}</td>
                 </tr>
                 {% empty %}
                 <tr>

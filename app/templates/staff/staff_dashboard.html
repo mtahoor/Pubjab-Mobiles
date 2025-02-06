@@ -5,15 +5,15 @@ Staff Dashboard
 {% endblock title %}
 {% block content %}
 
-   <!-- Sale & Revenue Start -->
     <!-- Filter Options -->
-    <div class="mb-4">
+    <div class=" bg-light rounded p-4 mb-4 ">
         <form method="GET">
-            <label for="filter">Filter By:</label>
-            <select name="filter" id="filter" class="form-control w-25 d-inline">
-                <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
-                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly</option>
-            </select>
+            <label for="from_date">From:</label>
+            <input class="form-control w-25 d-inline" type="date" name="from" id="from_date" value="{{ from|default:'' }}">
+    
+            <label for="to_date">To:</label>
+            <input class="form-control w-25 d-inline" type="date" name="to" id="to_date" value="{{ to|default:'' }}">
+    
             <button type="submit" class="btn btn-primary">Apply</button>
         </form>
     </div>
@@ -21,59 +21,84 @@ Staff Dashboard
     <!-- Dashboard Stats -->
     <div class="row g-4 mb-4">
         <!-- New Seats -->
-        <div class="col-sm-6 col-xl-3">
-            <a href="{% url 'new_seats' %}?filter={{ filter_type }}" class="text-decoration-none">
-                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                    <i class="fa fa-graduation-cap fa-3x text-primary"></i>
-                    <div class="ms-3">
-                        <p class="mb-2">New Seats</p>
-                        <h6 class="mb-0">{{ new_seats }}</h6>
+        <div class="col-sm-6 col-xl-4">
+            <a href="{% url 'new_seats' %}?from={{ from }}&to={{ to }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-5">
+                    <i class="fa fa-graduation-cap fa-3x text-primary p-5"></i>
+                    <div class="ms-3 ">
+                        <h4 class="mb-2 text-primary">Seats Booked</h4>
+                        <h1 class="mb-0">{{ new_seats }}</h1>
                     </div>
                 </div>
             </a>
         </div>
     
         <!-- New Joinings -->
-        <div class="col-sm-6 col-xl-3">
-            <a class="text-decoration-none">
-                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                    <i class="fa fa-user-check fa-3x text-primary"></i>
+        <div class="col-sm-6 col-xl-4">
+            <a href="{% url "new_joinings" %}?from={{ from }}&to={{ to }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-5">
+                    <i class="fa fa-user-check fa-3x text-primary p-5"></i>
                     <div class="ms-3">
-                        <p class="mb-2">New Joinings</p>
-                        <h6 class="mb-0">0</h6>
+                        <h4 class="mb-2 text-primary">Joinings</h4>
+                        <h1 class="mb-0">{{joined}}</h1>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+         <!-- Recoveries -->
+         <div class="col-sm-6 col-xl-4">
+            <a href="{% url "recoveries" %}?from={{ from }}&to={{ to }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-5">
+                    <i class="fa fa-coins fa-3x text-primary p-5"></i>
+                    <div class="ms-3">
+                        <h4 class="mb-2 text-primary">Recovery</h4>
+                        <h1 class="mb-0">{{recoveries}}</h1>
                     </div>
                 </div>
             </a>
         </div>
     
         <!-- Installments Due -->
-        <div class="col-sm-6 col-xl-3">
-            <a href="{% url 'installments_due' %}?filter={{ filter_type }}" class="text-decoration-none">
-                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                    <i class="fa fa-credit-card fa-3x text-primary"></i>
+        <div class="col-sm-6 col-xl-4">
+            <a href="{% url 'installments_due' %}?from={{ from }}&to={{ to }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-5">
+                    <i class="fa fa-credit-card fa-3x text-primary p-5"></i>
                     <div class="ms-3">
-                        <p class="mb-2">Installments Due</p>
-                        <h6 class="mb-0">{{ installments_due }}</h6>
+                        <h4 class="mb-2 text-primary">Installments Due</h4>
+                        <h1 class="mb-0">{{ installments_due }}</h1>
                     </div>
                 </div>
             </a>
         </div>
     
         <!-- Default Students -->
-        <div class="col-sm-6 col-xl-3">
-            <a href="{% url 'default_students' %}?filter={{ filter_type }}" class="text-decoration-none">
-                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                    <i class="fa fa-user-alt-slash fa-3x text-primary"></i>
+        <div class="col-sm-6 col-xl-4">
+            <a href="{% url 'default_students' %}?from={{ from }}&to={{ to }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-5">
+                    <i class="fa fa-user-alt-slash fa-3x text-primary p-5"></i>
                     <div class="ms-3">
-                        <p class="mb-2">Default Students</p>
-                        <h6 class="mb-0">{{ default_students }}</h6>
+                        <h4 class="mb-2 text-primary">Default Students</h4>
+                        <h1 class="mb-0">{{ default_students }}</h1>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-12 col-xl-4">
+
+            <a href="{% url 'all_transactions' %}?from={{ from }}&to={{ to }}" class="text-decoration-none">
+                <div class="bg-light rounded d-flex align-items-center justify-content-between p-5">
+                    <i class="fa fa-wallet fa-3x text-primary p-5"></i>
+                    <div class="ms-3">
+                        <h4 class="mb-2 text-primary">Balance</h4>
+                        <h1 class="mb-0"> {{ tt_balance }}</h1>
                     </div>
                 </div>
             </a>
         </div>
     </div>
     
-    <div class="row g-4 mb-4">
+    {% comment %} <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                 <i class="fa fa-angle-double-down fa-3x text-primary"></i>
@@ -109,9 +134,9 @@ Staff Dashboard
                     <h6 class="mb-0">Rs {{ total_balance }}</h6>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="row g-4 mb-4">
+        </div> 
+    </div> {% endcomment %}
+    {% comment %} <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                 <i class="fa fa-university fa-3x text-primary"></i>
@@ -130,29 +155,53 @@ Staff Dashboard
                 </div>
             </div>
         </div>
-        <div class="col-sm-12 col-xl-6">
 
-            <a href="{% url 'all_transactions' %}?filter={{ filter_type }}" class="text-decoration-none">
-                <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                    <i class="fa fa-wallet fa-3x text-primary"></i>
-                    <div class="ms-3">
-                        <p class="mb-2">Total</p>
-                        <h6 class="mb-0">Rs {{ tt_balance }}</h6>
+    </div> {% endcomment %}
+
+<!-- Staff  -->
+
+   
+
+<!--  Staff End -->
+
+
+
+
+            {% comment %} <!-- Sales Chart Start -->
+
+                <div class="row g-4 mb-4">
+                    <div class="col-sm-12 col-xl-6">
+                        <div class="bg-light text-center rounded p-4">
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <h6 class="mb-0">Worldwide Sales</h6>
+                                <a href="">Show All</a>
+                            </div>
+                            <canvas id="worldwide-sales"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-xl-6">
+                        <div class="bg-light text-center rounded p-4">
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <h6 class="mb-0">Salse & Revenue</h6>
+                                <a href="">Show All</a>
+                            </div>
+                            <canvas id="salse-revenue"></canvas>
+                        </div>
                     </div>
                 </div>
-            </a>
-        </div>
-    </div>
+
+            <!-- Sales Chart End -->
+
+
+             {% endcomment %}
 
 
 
 
-       
+<!-- Widgets Start -->
 
 
-
-
-
+<!-- Widgets End -->
 {% endblock content %}
 
 

@@ -21,44 +21,72 @@
 <div class="container mt-4">
     <h2>New Seats</h2>
     <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Roll Number</th>
-                    <th>Name</th>
-                    <th>Phone Number</th>
-                    <th>Refrence</th>
-                    <th>Enrollment Via</th>
-                    <th>Course</th>
-                    <th>Enrolled By</th>
-                    <th>Date</th>
-                    <th>Paid</th>
-                    <th>Total Fee</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for student in students %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ student.roll_number }}</td>
-                    <td>{{ student.name }}</td>
-                    <td>{{ student.phone_number }}</td>
-                    <td>{{ student.reference }}</td>
-                    <td>{{ student.enrollment_method }}</td>
-                    <td>{{ student.course_name }}</td>
-                    <td>{{ student.who_enrolled.username }}</td>
-                    <td>{{student.created_at}}</td>
-                    <td>{{ student.total_received }}</td>
-                    <td>{{ student.total_fee }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center">No new seats today.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <form method="POST">
+            {% csrf_token %}
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Roll Number</th>
+                        <th>Name</th>
+                        <th>Phone Number</th>
+                        <th>Refrence</th>
+                        <th>Enrollment Via</th>
+                        <th>Course</th>
+                        <th>Enrolled By</th>
+                        <th>Date</th>
+                        <th>Payment Method</th>
+                        <th>Paid</th>
+                        <th>Total Paid</th>
+                        <th>Total Fee</th>
+                        {% if request.user.role == 'superuser' %}
+                        <th>Status</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ student.roll_number }}</td>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.phone_number }}</td>
+                        <td>{{ student.reference }}</td>
+                        <td>{{ student.enrollment_method }}</td>
+                        <td>{{ student.course_name }}</td>
+                        <td>{{ student.who_enrolled.username }}</td>
+                        <td>{{student.created_at}}</td>
+                        <td>{{student.first_installment_transaction_method}}</td>
+                        <td>{{ student.first_installment_fee }}</td>
+                        <td>{{ student.total_received }}</td>
+                        <td>{{ student.total_fee }}</td>
+                        {% if request.user.role == 'superuser' %}
+                        <td>
+                            <input type="hidden" name="approve_record_{{ student.first_installment_id }}" value="off">
+
+                            <input 
+                                class="form-check-input" 
+                                type="checkbox" 
+                                name="approve_record_{{ student.first_installment_id }}" 
+                                {% if student.first_installment_status == 'approved' %}checked{% endif %}
+                            >
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="14" class="text-center">No new seats today.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if request.user.role == 'superuser' %}
+            <div class="d-flex justify-content-end">
+                <input class="btn btn-primary" type="submit" value="Update Status">
+            </div>
+            {% endif %}
+
+        </form>
     </div>
 </div>
 </div>
